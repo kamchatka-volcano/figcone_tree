@@ -1,4 +1,5 @@
 #pragma once
+
 #include "streamposition.h"
 #include <string>
 #include <vector>
@@ -7,28 +8,28 @@
 
 namespace figcone {
 
-class TreeParam{
+class TreeParam {
+    struct Item {
+        std::string value;
+    };
+    struct List {
+        std::vector<std::string> valueList;
+    };
+
 public:
     TreeParam(std::string value, const StreamPosition& position = {})
         : position_(position)
-        , data_(Param{std::move(value)})
+        , data_(Item{std::move(value)})
     {}
 
-    TreeParam(std::vector<std::string> valueList, const StreamPosition& position = {})
+    TreeParam(std::vector <std::string> valueList, const StreamPosition& position = {})
         : position_(position)
         , data_(List{std::move(valueList)})
     {}
 
-    struct Param{
-        std::string value;
-    };
-    struct List{
-        std::vector<std::string> valueList;
-    };
-
-    bool isParam() const
+    bool isItem() const
     {
-        return std::holds_alternative<Param>(data_);
+        return std::holds_alternative<Item>(data_);
     }
 
     bool isList() const
@@ -36,25 +37,16 @@ public:
         return std::holds_alternative<List>(data_);
     }
 
-    Param& asParam()
+    const std::string& value() const
     {
-        return std::get<Param>(data_);
+        return std::get<Item>(data_).value;
     }
 
-    List& asList()
+    const std::vector<std::string> valueList() const
     {
-        return std::get<List>(data_);
+        return std::get<List>(data_).valueList;
     }
 
-    const Param& asParam() const
-    {
-        return std::get<Param>(data_);
-    }
-
-    const List& asList() const
-    {
-        return std::get<List>(data_);
-    }
 
     StreamPosition position() const
     {
@@ -63,25 +55,114 @@ public:
 
 private:
     StreamPosition position_;
-    std::variant<Param, List> data_;
+    std::variant <Item, List> data_;
 };
 
-
-
-
-class TreeNode{
+class TreeNode {
 public:
-    struct Node{
-        std::map<std::string, TreeParam> params;
-        std::map<std::string, TreeNode> nodes;
-    };
-    struct List{
-        std::vector<TreeNode> nodeList;
+    class List {
+    public:
+        int count() const
+        {
+            return static_cast<int>(nodeList_.size());
+        }
+
+        const TreeNode& node(int index) const
+        {
+            return nodeList_.at(static_cast<std::size_t>(index));
+        }
+
+        TreeNode& addNode(const StreamPosition& pos = {})
+        {
+            auto node = TreeNode{};
+            node.position_ = pos;
+            node.data_.emplace<TreeNode::Item>();
+            return nodeList_.emplace_back(std::move(node));
+        }
+
+    private:
+        std::vector<TreeNode> nodeList_;
     };
 
-    bool isNode() const
+    class Item {
+    public:
+        int paramsCount() const
+        {
+            return static_cast<int>(params_.size());
+        }
+
+        int nodesCount() const
+        {
+            return static_cast<int>(nodes_.size());
+        }
+
+        bool hasParam(const std::string& name) const
+        {
+            return params_.find(name) != params_.end();
+        }
+
+        bool hasNode(const std::string& name) const
+        {
+            return nodes_.find(name) != nodes_.end();
+        }
+
+        const TreeParam& param(const std::string& name) const
+        {
+            return params_.at(name);
+        }
+
+        const std::map<std::string, TreeParam>& params() const
+        {
+            return params_;
+        }
+
+        const TreeNode& node(const std::string& name) const
+        {
+            return nodes_.at(name);
+        }
+
+        const std::map<std::string, TreeNode>& nodes() const
+        {
+            return nodes_;
+        }
+
+        TreeNode& addNode(const std::string& name, const StreamPosition& pos = {})
+        {
+            auto node = TreeNode{};
+            node.position_ = pos;
+            node.data_.emplace<Item>();
+            auto it = nodes_.emplace(name, std::move(node));
+            return it.first->second;
+        }
+
+        TreeNode& addNodeList(const std::string& name, const StreamPosition& pos = {})
+        {
+            auto node = TreeNode{};
+            node.position_ = pos;
+            node.data_.emplace<List>();
+            auto it = nodes_.emplace(name, std::move(node));
+            return it.first->second;
+        }
+
+        void addParam(const std::string& name, const std::string& value, const StreamPosition& position = {})
+        {
+            params_.emplace(name, TreeParam{value, position});
+        }
+
+        void addParamList(const std::string& name, const std::vector <std::string>& valueList,
+                          const StreamPosition& position = {})
+        {
+            params_.emplace(name, TreeParam{valueList, position});
+        }
+
+    private:
+        std::map<std::string, TreeParam> params_;
+        std::map<std::string, TreeNode> nodes_;
+    };
+
+    bool isItem() const
     {
-        return std::holds_alternative<Node>(data_);
+        return std::holds_alternative<Item>(data_);
     }
 
     bool isList() const
@@ -89,22 +170,22 @@ public:
         return std::holds_alternative<List>(data_);
     }
 
-    Node& asNode()
+    const Item& asItem() const
     {
-        return std::get<Node>(data_);
+        return std::get<Item>(data_);
     }
 
-    List& asList()
+    const List& asList() const
     {
         return std::get<List>(data_);
     }
 
-    const Node& asNode() const
+    Item& asItem()
     {
-        return std::get<Node>(data_);
+        return std::get<Item>(data_);
     }
 
-    const List& asList() const
+    List& asList()
     {
         return std::get<List>(data_);
     }
@@ -121,38 +202,18 @@ public:
 
 private:
     TreeNode() = default;
-
-    std::variant<Node, List> data_;
+    std::variant<Item, List> data_;
     bool isRoot_ = false;
-    StreamPosition position_{1,1};
+    StreamPosition position_{1, 1};
 
     friend TreeNode makeTreeRoot();
-    friend TreeNode makeTreeNode(const StreamPosition& pos);
-    friend TreeNode makeTreeNodeList(const StreamPosition& pos);
 };
 
 inline TreeNode makeTreeRoot()
 {
-    auto node = TreeNode{};
-    node.isRoot_ = true;
-    node.position_ = StreamPosition{1,1};
-    return node;
-}
-
-inline TreeNode makeTreeNode(const StreamPosition& pos = {})
-{
-    auto node = TreeNode{};
-    node.position_ = pos;
-    node.data_.emplace<TreeNode::Node>();
-    return node;
-}
-
-inline TreeNode makeTreeNodeList(const StreamPosition& pos = {})
-{
-    auto node = TreeNode{};
-    node.position_ = pos;
-    node.data_.emplace<TreeNode::List>();
-    return node;
+    auto root = TreeNode{};
+    root.isRoot_ = true;
+    return root;
 }
 
 }
