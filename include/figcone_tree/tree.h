@@ -1,8 +1,9 @@
 #pragma once
-
 #include "streamposition.h"
+#include "errors.h"
 #include <string>
 #include <vector>
+#include <deque>
 #include <map>
 #include <variant>
 
@@ -81,7 +82,7 @@ public:
         }
 
     private:
-        std::vector<TreeNode> nodeList_;
+        std::deque<TreeNode> nodeList_;
     };
 
     class Item {
@@ -131,8 +132,11 @@ public:
             auto node = TreeNode{};
             node.position_ = pos;
             node.data_.emplace<Item>();
-            auto it = nodes_.emplace(name, std::move(node));
-            return it.first->second;
+            auto [it, ok] = nodes_.emplace(name, std::move(node));
+            if (!ok)
+                throw ConfigError{pos, "Node '" + name + "' already exists"};
+
+            return it->second;
         }
 
         TreeNode& addNodeList(const std::string& name, const StreamPosition& pos = {})
@@ -140,19 +144,26 @@ public:
             auto node = TreeNode{};
             node.position_ = pos;
             node.data_.emplace<List>();
-            auto it = nodes_.emplace(name, std::move(node));
-            return it.first->second;
+            auto [it, ok] = nodes_.emplace(name, std::move(node));
+            if (!ok)
+                throw ConfigError{pos, "Node list '" + name + "' already exists"};
+
+            return it->second;
         }
 
-        void addParam(const std::string& name, const std::string& value, const StreamPosition& position = {})
+        void addParam(const std::string& name, const std::string& value, const StreamPosition& pos = {})
         {
-            params_.emplace(name, TreeParam{value, position});
+            auto [_, ok] = params_.emplace(name, TreeParam{value, pos});
+            if (!ok)
+                throw ConfigError{pos, "Parameter '" + name + "' already exists"};
         }
 
         void addParamList(const std::string& name, const std::vector <std::string>& valueList,
-                          const StreamPosition& position = {})
+                          const StreamPosition& pos = {})
         {
-            params_.emplace(name, TreeParam{valueList, position});
+            auto [_, ok] = params_.emplace(name, TreeParam{valueList, pos});
+            if (!ok)
+                throw ConfigError{pos, "Parameter list '" + name + "' already exists"};
         }
 
     private:

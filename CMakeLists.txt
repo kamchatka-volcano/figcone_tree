@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(figcone_tree VERSION 1.0 DESCRIPTION "figcone library interface")
+project(figcone_tree VERSION 1.0.0 DESCRIPTION "figcone library interface")
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(FIGCONE_TREE_SUBPROJECT OFF)
 else()
     set(FIGCONE_TREE_SUBPROJECT ON)
 endif()
-
 
 add_library(figcone_tree INTERFACE)
 add_library(figcone::figcone_tree ALIAS figcone_tree)
@@ -28,7 +27,7 @@ set(PUBLIC_HEADERS
 set_target_properties(figcone_tree PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 
 option(INSTALL_FIGCONE_TREE "Install figcone_tree library unconditionally" OFF)
-if (NOT FIGCONE_TREE_SUBPROJECT OR INSTALL_SFUN)
+if (NOT FIGCONE_TREE_SUBPROJECT OR INSTALL_FIGCONE_TREE)
     include(GNUInstallDirs)
 
     set(FIGCONE_TREE_PACK_PATH ${CMAKE_INSTALL_LIBDIR}/cmake/figcone_tree)
