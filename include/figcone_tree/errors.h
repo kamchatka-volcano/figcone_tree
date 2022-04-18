@@ -16,7 +16,7 @@ class ConfigError : public Error{
 public:
     using Error::Error;
 
-    ConfigError(const StreamPosition& errorPosition, const std::string& errorMsg)
+    ConfigError(const std::string& errorMsg, const StreamPosition& errorPosition = {})
             : Error(streamPositionToString(errorPosition) + errorMsg)
     {
     }

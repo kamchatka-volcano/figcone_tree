@@ -134,7 +134,7 @@ public:
             node.data_.emplace<Item>();
             auto [it, ok] = nodes_.emplace(name, std::move(node));
             if (!ok)
-                throw ConfigError{pos, "Node '" + name + "' already exists"};
+                throw ConfigError{"Node '" + name + "' already exists", pos};
 
             return it->second;
         }
@@ -146,7 +146,7 @@ public:
             node.data_.emplace<List>();
             auto [it, ok] = nodes_.emplace(name, std::move(node));
             if (!ok)
-                throw ConfigError{pos, "Node list '" + name + "' already exists"};
+                throw ConfigError{"Node list '" + name + "' already exists", pos};
 
             return it->second;
         }
@@ -155,7 +155,7 @@ public:
         {
             auto [_, ok] = params_.emplace(name, TreeParam{value, pos});
             if (!ok)
-                throw ConfigError{pos, "Parameter '" + name + "' already exists"};
+                throw ConfigError{"Parameter '" + name + "' already exists", pos};
         }
 
         void addParamList(const std::string& name, const std::vector <std::string>& valueList,
@@ -163,7 +163,7 @@ public:
         {
             auto [_, ok] = params_.emplace(name, TreeParam{valueList, pos});
             if (!ok)
-                throw ConfigError{pos, "Parameter list '" + name + "' already exists"};
+                throw ConfigError{"Parameter list '" + name + "' already exists", pos};
         }
 
     private:
