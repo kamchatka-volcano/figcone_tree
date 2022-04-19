@@ -1,5 +1,7 @@
 #pragma once
 #include <optional>
+#include <string>
+#include <sstream>
 
 namespace figcone{
 
