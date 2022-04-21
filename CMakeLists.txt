@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(figcone_tree VERSION 1.0.0 DESCRIPTION "figcone library interface")
+project(figcone_tree VERSION 0.9.0 DESCRIPTION "figcone library interface")
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(FIGCONE_TREE_SUBPROJECT OFF)
