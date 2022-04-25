@@ -22,6 +22,7 @@ set(PUBLIC_HEADERS
         "include/figcone_tree/errors.h"
         "include/figcone_tree/iparser.h"
         "include/figcone_tree/streamposition.h"
+        "include/figcone_tree/stringconverter.h"
         "include/figcone_tree/tree.h")
 
 set_target_properties(figcone_tree PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
