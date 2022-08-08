@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(figcone_tree VERSION 0.9.0 DESCRIPTION "C++17 interface library for creating configuration parsers compatible with figcone")
+project(figcone_tree VERSION 0.10.0 DESCRIPTION "C++17 interface library for creating configuration parsers compatible with figcone")
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     set(FIGCONE_TREE_SUBPROJECT OFF)
 else()
     set(FIGCONE_TREE_SUBPROJECT ON)
 endif()
+
+include (external/sfun)
 
 add_library(figcone_tree INTERFACE)
 add_library(figcone::figcone_tree ALIAS figcone_tree)
@@ -18,6 +20,17 @@ target_include_directories(
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+target_include_directories(
+    figcone_tree
+    INTERFACE
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/figcone_tree/detail/external>
+)
+target_include_directories(
+    figcone_tree
+    INTERFACE
+    $<BUILD_INTERFACE:${sfun_SOURCE_DIR}/include/>
+)
+
 set(PUBLIC_HEADERS
         "include/figcone_tree/errors.h"
         "include/figcone_tree/iparser.h"
@@ -30,6 +43,7 @@ set_target_properties(figcone_tree PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 option(INSTALL_FIGCONE_TREE "Install figcone_tree library unconditionally" OFF)
 if (NOT FIGCONE_TREE_SUBPROJECT OR INSTALL_FIGCONE_TREE)
     include(GNUInstallDirs)
+    install(DIRECTORY ${sfun_SOURCE_DIR}/include/sfun DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/figcone_tree/detail/external)
 
     set(FIGCONE_TREE_PACK_PATH ${CMAKE_INSTALL_LIBDIR}/cmake/figcone_tree)
     install(TARGETS figcone_tree
