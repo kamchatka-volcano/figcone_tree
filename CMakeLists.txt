@@ -43,7 +43,6 @@ set_target_properties(figcone_tree PROPERTIES PUBLIC_HEADER "${PUBLIC_HEADERS}")
 
 option(INSTALL_FIGCONE_TREE "Install figcone_tree library unconditionally" OFF)
 if (NOT FIGCONE_TREE_SUBPROJECT OR INSTALL_FIGCONE_TREE)
-    include(GNUInstallDirs)
     install(DIRECTORY ${sfun_SOURCE_DIR}/include/sfun DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/figcone_tree/detail/external)
 
     set(FIGCONE_TREE_PACK_PATH ${CMAKE_INSTALL_LIBDIR}/cmake/figcone_tree)
