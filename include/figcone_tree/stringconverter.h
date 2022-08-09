@@ -2,16 +2,9 @@
 #include <string>
 #include <sstream>
 #include <optional>
+#include <sfun/traits.h>
 
 namespace figcone{
-
-namespace detail::stringconverter{
-template<typename T, typename = void>
-struct is_optional : std::false_type {};
-
-template<typename T>
-struct is_optional<std::optional<T> > : std::true_type {};
-}
 
 template<typename T>
 struct StringConverter{
@@ -27,10 +20,10 @@ struct StringConverter{
             return value;
         };
 
-        if constexpr(std::is_convertible_v<T, std::string>){
+        if constexpr(std::is_convertible_v<sfun::traits::remove_optional_t<T>, std::string>){
             return data;
         }
-        else if constexpr(detail::stringconverter::is_optional<T>::value){
+        else if constexpr(sfun::traits::is_optional<T>::value){
             auto value = T{};
             value.emplace();
             return setValue(*value, data);
