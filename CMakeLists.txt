@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(figcone_tree VERSION 0.10.0 DESCRIPTION "C++17 interface library for creating configuration parsers compatible with figcone")
+project(figcone_tree VERSION 0.10.1 DESCRIPTION "C++17 interface library for creating configuration parsers compatible with figcone")
 include(GNUInstallDirs)
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
