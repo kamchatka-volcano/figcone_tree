@@ -1,8 +1,8 @@
 #pragma once
+#include "detail/external/sfun/traits.h"
 #include <string>
 #include <sstream>
 #include <optional>
-#include <sfun/traits.h>
 
 namespace figcone{
 
