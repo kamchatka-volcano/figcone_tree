@@ -1,4 +1,6 @@
-#pragma once
+#ifndef FIGCONE_TREE_STREAMPOSITION_H
+#define FIGCONE_TREE_STREAMPOSITION_H
+
 #include <optional>
 #include <string>
 #include <sstream>
@@ -22,3 +24,5 @@ inline std::string streamPositionToString(const StreamPosition& pos){
 }
 
 }
+
+#endif //FIGCONE_TREE_STREAMPOSITION_H

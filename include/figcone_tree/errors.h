@@ -1,4 +1,6 @@
-#pragma once
+#ifndef FIGCONE_TREE_ERRORS_H
+#define FIGCONE_TREE_ERRORS_H
+
 #include "streamposition.h"
 #include <stdexcept>
 #include <string>
@@ -22,6 +24,6 @@ public:
     }
 };
 
-
-
 }
+
+#endif //FIGCONE_TREE_ERRORS_H

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef FIGCONE_TREE_STRINGCONVERTER_H
+#define FIGCONE_TREE_STRINGCONVERTER_H
+
 #include "detail/external/sfun/traits.h"
 #include <string>
 #include <sstream>
@@ -50,3 +52,5 @@ std::optional<T> convertFromString(const std::string& data)
 
 }
 }
+
+#endif //FIGCONE_TREE_STRINGCONVERTER_H

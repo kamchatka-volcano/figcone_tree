@@ -1,4 +1,6 @@
-#pragma once
+#ifndef FIGCONE_TREE_TREE_H
+#define FIGCONE_TREE_TREE_H
+
 #include "streamposition.h"
 #include "errors.h"
 #include <string>
@@ -228,3 +230,5 @@ inline TreeNode makeTreeRoot()
 }
 
 }
+
+#endif //FIGCONE_TREE_TREE_H
