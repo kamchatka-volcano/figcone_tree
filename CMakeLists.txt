@@ -4,12 +4,16 @@ project(figcone_tree VERSION 0.11.0 DESCRIPTION "C++17 interface library for cre
 include(GNUInstallDirs)
 include(external/seal_lake)
 
-SealLake_Download(
+SealLake_Bundle(
         GIT_REPOSITORY https://github.com/kamchatka-volcano/sfun.git
-        GIT_TAG        include_guards
+        GIT_TAG        cmake_maintenance
         DIRECTORIES
             include/sfun
-        DESTINATION include/figcone_tree/detail/external
+        DESTINATION
+            include/figcone_tree/detail/external
+        TEXT_REPLACEMENTS
+            "namespace sfun" "namespace figcone::tree::sfun"
+            "SFUN_" "FIGCONE_TREE_SFUN_"
 )
 
 SealLake_HeaderOnlyLibrary(
