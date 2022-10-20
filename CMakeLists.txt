@@ -5,8 +5,9 @@ include(GNUInstallDirs)
 include(external/seal_lake)
 
 SealLake_Bundle(
+        NAME figcone_tree_sfun
         GIT_REPOSITORY https://github.com/kamchatka-volcano/sfun.git
-        GIT_TAG        cmake_maintenance
+        GIT_TAG        v2.4.0
         DIRECTORIES
             include/sfun
         DESTINATION
