@@ -1,4 +1,6 @@
-#pragma once
+#ifndef FIGCONE_TREE_IPARSER_H
+#define FIGCONE_TREE_IPARSER_H
+
 #include "tree.h"
 #include <istream>
 
@@ -10,3 +12,5 @@ public:
 };
 
 }
+
+#endif //FIGCONE_TREE_IPARSER_H

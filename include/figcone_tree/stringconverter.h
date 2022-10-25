@@ -1,8 +1,10 @@
-#pragma once
+#ifndef FIGCONE_TREE_STRINGCONVERTER_H
+#define FIGCONE_TREE_STRINGCONVERTER_H
+
+#include "detail/external/sfun/traits.h"
 #include <string>
 #include <sstream>
 #include <optional>
-#include <sfun/traits.h>
 
 namespace figcone{
 
@@ -20,10 +22,10 @@ struct StringConverter{
             return value;
         };
 
-        if constexpr(std::is_convertible_v<sfun::traits::remove_optional_t<T>, std::string>){
+        if constexpr(std::is_convertible_v<tree::sfun::traits::remove_optional_t<T>, std::string>){
             return data;
         }
-        else if constexpr(sfun::traits::is_optional<T>::value){
+        else if constexpr(tree::sfun::traits::is_optional<T>::value){
             auto value = T{};
             value.emplace();
             return setValue(*value, data);
@@ -50,3 +52,5 @@ std::optional<T> convertFromString(const std::string& data)
 
 }
 }
+
+#endif //FIGCONE_TREE_STRINGCONVERTER_H

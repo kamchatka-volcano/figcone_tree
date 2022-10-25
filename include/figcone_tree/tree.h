@@ -1,11 +1,13 @@
-#pragma once
+#ifndef FIGCONE_TREE_TREE_H
+#define FIGCONE_TREE_TREE_H
+
 #include "streamposition.h"
 #include "errors.h"
 #include <string>
 #include <vector>
-#include <deque>
 #include <map>
 #include <variant>
+#include <memory>
 
 namespace figcone {
 
@@ -61,6 +63,8 @@ private:
 
 class TreeNode {
 public:
+    TreeNode() = default;
+
     class List {
     public:
         int count() const
@@ -70,19 +74,19 @@ public:
 
         const TreeNode& node(int index) const
         {
-            return nodeList_.at(static_cast<std::size_t>(index));
+            return *nodeList_.at(static_cast<std::size_t>(index));
         }
 
         TreeNode& addNode(const StreamPosition& pos = {})
         {
-            auto node = TreeNode{};
-            node.position_ = pos;
-            node.data_.emplace<TreeNode::Item>();
-            return nodeList_.emplace_back(std::move(node));
+            auto node = std::make_unique<TreeNode>();
+            node->position_ = pos;
+            node->data_.emplace<TreeNode::Item>();
+            return *nodeList_.emplace_back(std::move(node));
         }
 
     private:
-        std::deque<TreeNode> nodeList_;
+        std::vector<std::unique_ptr<TreeNode>> nodeList_;
     };
 
     class Item {
@@ -212,7 +216,6 @@ public:
     }
 
 private:
-    TreeNode() = default;
     std::variant<Item, List> data_;
     bool isRoot_ = false;
     StreamPosition position_{1, 1};
@@ -228,3 +231,5 @@ inline TreeNode makeTreeRoot()
 }
 
 }
+
+#endif //FIGCONE_TREE_TREE_H
