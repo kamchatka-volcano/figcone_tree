@@ -63,8 +63,6 @@ private:
 
 class TreeNode {
 public:
-    TreeNode() = default;
-
     class List {
     public:
         int count() const

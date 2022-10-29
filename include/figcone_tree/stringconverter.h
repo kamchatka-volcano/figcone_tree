@@ -12,6 +12,7 @@ template<typename T>
 struct StringConverter{
     static std::optional<T> fromString(const std::string& data)
     {
+        [[maybe_unused]]
         auto setValue = [](auto& value, const std::string& data) -> std::optional<T>
         {
             auto stream = std::stringstream{data};
@@ -22,7 +23,7 @@ struct StringConverter{
             return value;
         };
 
-        if constexpr(std::is_convertible_v<tree::sfun::traits::remove_optional_t<T>, std::string>){
+        if constexpr(std::is_convertible_v<std::string, tree::sfun::traits::remove_optional_t<T>>){
             return data;
         }
         else if constexpr(tree::sfun::traits::is_optional<T>::value){
