@@ -2,19 +2,20 @@
 #define FIGCONE_TREE_STREAMPOSITION_H
 
 #include <optional>
-#include <string>
 #include <sstream>
+#include <string>
 
-namespace figcone{
+namespace figcone {
 
-struct StreamPosition{
+struct StreamPosition {
     std::optional<int> line;
     std::optional<int> column;
 };
 
-inline std::string streamPositionToString(const StreamPosition& pos){
+inline std::string streamPositionToString(const StreamPosition& pos)
+{
     auto ss = std::stringstream{};
-    if(pos.line) {
+    if (pos.line) {
         ss << "[line:" << *pos.line;
         if (pos.column)
             ss << ", column:" << *pos.column;
@@ -23,6 +24,6 @@ inline std::string streamPositionToString(const StreamPosition& pos){
     return ss.str();
 }
 
-}
+} //namespace figcone
 
 #endif //FIGCONE_TREE_STREAMPOSITION_H

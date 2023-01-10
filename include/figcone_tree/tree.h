@@ -1,13 +1,13 @@
 #ifndef FIGCONE_TREE_TREE_H
 #define FIGCONE_TREE_TREE_H
 
-#include "streamposition.h"
 #include "errors.h"
-#include <string>
-#include <vector>
+#include "streamposition.h"
 #include <map>
-#include <variant>
 #include <memory>
+#include <string>
+#include <variant>
+#include <vector>
 
 namespace figcone {
 
@@ -23,12 +23,14 @@ public:
     TreeParam(std::string value, const StreamPosition& position = {})
         : position_(position)
         , data_(Item{std::move(value)})
-    {}
+    {
+    }
 
-    TreeParam(std::vector <std::string> valueList, const StreamPosition& position = {})
+    TreeParam(std::vector<std::string> valueList, const StreamPosition& position = {})
         : position_(position)
         , data_(List{std::move(valueList)})
-    {}
+    {
+    }
 
     bool isItem() const
     {
@@ -50,7 +52,6 @@ public:
         return std::get<List>(data_).valueList;
     }
 
-
     StreamPosition position() const
     {
         return position_;
@@ -58,7 +59,7 @@ public:
 
 private:
     StreamPosition position_;
-    std::variant <Item, List> data_;
+    std::variant<Item, List> data_;
 };
 
 class TreeNode {
@@ -160,8 +161,10 @@ public:
                 throw ConfigError{"Parameter '" + name + "' already exists", pos};
         }
 
-        void addParamList(const std::string& name, const std::vector <std::string>& valueList,
-                          const StreamPosition& pos = {})
+        void addParamList(
+                const std::string& name,
+                const std::vector<std::string>& valueList,
+                const StreamPosition& pos = {})
         {
             auto [_, ok] = params_.emplace(name, TreeParam{valueList, pos});
             if (!ok)
@@ -228,6 +231,6 @@ inline TreeNode makeTreeRoot()
     return root;
 }
 
-}
+} //namespace figcone
 
 #endif //FIGCONE_TREE_TREE_H
