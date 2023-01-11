@@ -2,7 +2,7 @@
 #define FIGCONE_TREE_STRINGCONVERTER_H
 
 #include "errors.h"
-#include "detail/external/sfun/traits.h"
+#include "detail/external/sfun/type_traits.h"
 #include <optional>
 #include <sstream>
 #include <string>
@@ -23,10 +23,10 @@ struct StringConverter {
             return value;
         };
 
-        if constexpr (std::is_convertible_v<std::string, tree::sfun::traits::remove_optional_t<T>>) {
+        if constexpr (std::is_convertible_v<std::string, tree::sfun::remove_optional_t<T>>) {
             return data;
         }
-        else if constexpr (tree::sfun::traits::is_optional<T>::value) {
+        else if constexpr (tree::sfun::is_optional_v<T>) {
             auto value = T{};
             value.emplace();
             return setValue(*value, data);
