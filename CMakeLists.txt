@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(figcone_tree VERSION 1.0.1 DESCRIPTION "C++17 interface library for creating configuration parsers compatible with figcone")
+project(figcone_tree VERSION 2.0.0 DESCRIPTION "C++17 interface library for creating configuration parsers compatible with figcone")
 include(GNUInstallDirs)
 include(external/seal_lake)
 
 SealLake_Bundle(
         NAME figcone_tree_sfun
         GIT_REPOSITORY https://github.com/kamchatka-volcano/sfun.git
-        GIT_TAG        v3.0.0
+        GIT_TAG        v5.0.0
         DIRECTORIES
             include/sfun
         DESTINATION

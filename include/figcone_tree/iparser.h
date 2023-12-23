@@ -8,7 +8,7 @@ namespace figcone {
 class IParser {
 public:
     virtual ~IParser() = default;
-    virtual TreeNode parse(std::istream& stream) = 0;
+    virtual Tree parse(std::istream& stream) = 0;
 };
 
 } //namespace figcone
