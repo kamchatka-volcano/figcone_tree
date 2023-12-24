@@ -76,8 +76,10 @@ class TreeNode {
         Any
     };
 
-    explicit TreeNode(Type type, const StreamPosition& position = {})
-        : type_{type}
+    explicit TreeNode(Type type, const std::string& name, const StreamPosition& position = {})
+        : data_{List()}
+        , type_{type}
+        , name_{name}
         , position_{position}
     {
         switch (type_) {
@@ -87,7 +89,7 @@ class TreeNode {
             data_.emplace<List>();
             break;
         case Type::Item:
-            data_.emplace<Item>();
+            data_.emplace<Item>(nullptr);
             break;
         }
     }
@@ -98,7 +100,7 @@ public:
     public:
         int count() const;
         const TreeNode& node(int index) const;
-        TreeNode& addNode(const StreamPosition& pos = {});
+        TreeNode& addNode(const std::string& name, const StreamPosition& pos = {});
 
     private:
         std::vector<std::unique_ptr<TreeNode>> nodeList_;
@@ -107,14 +109,16 @@ public:
 
     class Item {
     public:
+        Item(std::vector<std::unique_ptr<TreeNode>>* nodeList = nullptr)
+            : nodeList_{nodeList}
+        {
+        }
         int paramsCount() const;
         int nodesCount() const;
         bool hasParam(const std::string& name) const;
         bool hasNode(const std::string& name) const;
         const TreeParam& param(const std::string& name) const;
-        const std::map<std::string, TreeParam>& params() const;
         const TreeNode& node(const std::string& name) const;
-        const std::map<std::string, TreeNode>& nodes() const;
 
         TreeNode& addNode(const std::string& name, const StreamPosition& pos = {});
         TreeNode& addNodeList(const std::string& name, const StreamPosition& pos = {});
@@ -128,6 +132,7 @@ public:
     private:
         std::map<std::string, TreeParam> params_;
         std::map<std::string, TreeNode> nodes_;
+        std::vector<std::unique_ptr<TreeNode>>* nodeList_ = nullptr;
     };
 
     friend class List;
@@ -152,14 +157,14 @@ public:
 
     const Item& asItem() const
     {
-        if (isAny()){
+        if (isAny()) {
             if (asList().count() > 1)
                 throw ConfigError{"Bad any node access - trying to get multiple items as a single item", position_};
-            if (asList().count() == 0){
-                static const auto item = Item{};
-                return item;
-            }
-            return asList().nodeList_.at(0)->asItem();
+            //            if (asList().count() == 0){
+            //                static const auto item = Item{};
+            //                return item;
+            //            }
+            return listAdatapterItem_;
         }
 
         if (!isItem())
@@ -178,16 +183,21 @@ public:
 
     Item& asItem()
     {
-        if (isAny()){
-            if (prevAccess != Type::Item){
+        if (isAny()) {
+            if (prevAccess != Type::Item) {
                 prevAccess = Type::Item;
-                return data_.emplace<List>().addNode().asItem();
+                auto& list = data_.emplace<List>();
+                listAdatapterItem_ = Item{&list.nodeList_};
+                list.addNode(name_);
+                //return list.addNode(name_).asItem();
+                return listAdatapterItem_;
             }
             if (std::get<List>(data_).count() != 1)
                 throw ConfigError{"Bad any node access - trying to get zero or multiple items as a single item"};
 
             prevAccess = Type::Item;
-            return std::get<List>(data_).nodeList_.at(0)->asItem();
+            //return std::get<List>(data_).nodeList_.at(0)->asItem();
+            return listAdatapterItem_;
         }
 
         if (!isItem())
@@ -197,9 +207,11 @@ public:
 
     List& asList()
     {
-        if (isAny() && prevAccess != Type::List){
+        if (isAny() && prevAccess != Type::List) {
             prevAccess = Type::List;
-            return data_.emplace<List>();
+            auto& list = data_.emplace<List>();
+            listAdatapterItem_ = Item{&list.nodeList_};
+            return list;
         }
 
         if (!isList())
@@ -224,13 +236,14 @@ private:
     }
 
 private:
-
     std::variant<Item, List> data_;
     Type type_ = Type::Item;
     Type prevAccess = Type::Any;
+    std::string name_;
     StreamPosition position_ = {1, 1};
+    Item listAdatapterItem_;
 
-    friend TreeNode makeTreeRoot();
+    friend std::unique_ptr<TreeNode> makeTreeRoot();
 };
 
 inline int TreeNode::List::count() const
@@ -243,55 +256,73 @@ inline const TreeNode& TreeNode::List::node(int index) const
     return *nodeList_.at(static_cast<std::size_t>(index));
 }
 
-inline TreeNode& TreeNode::List::addNode(const StreamPosition& pos)
+inline TreeNode& TreeNode::List::addNode(const std::string& name, const StreamPosition& pos)
 {
-    auto node = std::unique_ptr<TreeNode>{new TreeNode(TreeNode::Type::Item, pos)};
+    auto node = std::unique_ptr<TreeNode>{new TreeNode(TreeNode::Type::Item, name, pos)};
     return *nodeList_.emplace_back(std::move(node));
 }
 
 inline int TreeNode::Item::paramsCount() const
 {
+    if (nodeList_ && !nodeList_->empty())
+        return nodeList_->at(0)->asItem().paramsCount();
+
     return static_cast<int>(params_.size());
 }
 
 inline int TreeNode::Item::nodesCount() const
 {
+    if (nodeList_ && !nodeList_->empty())
+        return nodeList_->at(0)->asItem().nodesCount();
+
     return static_cast<int>(nodes_.size());
 }
 
 inline bool TreeNode::Item::hasParam(const std::string& name) const
 {
+    if (nodeList_ && !nodeList_->empty())
+        return nodeList_->at(0)->asItem().hasParam(name);
+
     return params_.find(name) != params_.end();
 }
 
 inline bool TreeNode::Item::hasNode(const std::string& name) const
 {
+    if (nodeList_ && !nodeList_->empty()) {
+        if (nodeList_->at(0)->name_ == name)
+            return true;
+        return nodeList_->at(0)->asItem().hasNode(name);
+    }
+
     return nodes_.find(name) != nodes_.end();
 }
 
 inline const TreeParam& TreeNode::Item::param(const std::string& name) const
 {
-    return params_.at(name);
-}
+    if (nodeList_ && !nodeList_->empty())
+        return nodeList_->at(0)->asItem().param(name);
 
-inline const std::map<std::string, TreeParam>& TreeNode::Item::params() const
-{
-    return params_;
+    return params_.at(name);
 }
 
 inline const TreeNode& TreeNode::Item::node(const std::string& name) const
 {
-    return nodes_.at(name);
-}
+    if (nodeList_ && !nodeList_->empty()) {
+        if (nodeList_->at(0)->name_ == name)
+            return *nodeList_->at(0);
 
-inline const std::map<std::string, TreeNode>& TreeNode::Item::nodes() const
-{
-    return nodes_;
+        return nodeList_->at(0)->asItem().node(name);
+    }
+
+    return nodes_.at(name);
 }
 
 inline TreeNode& TreeNode::Item::addNode(const std::string& name, const StreamPosition& pos)
 {
-    auto node = TreeNode{Type::Item, pos};
+    if (nodeList_ && !nodeList_->empty())
+        return nodeList_->at(0)->asItem().addNode(name, pos);
+
+    auto node = TreeNode{Type::Item, name, pos};
     auto [it, ok] = nodes_.emplace(name, std::move(node));
     if (!ok)
         throw ConfigError{"Node '" + name + "' already exists", pos};
@@ -301,7 +332,10 @@ inline TreeNode& TreeNode::Item::addNode(const std::string& name, const StreamPo
 
 inline TreeNode& TreeNode::Item::addNodeList(const std::string& name, const StreamPosition& pos)
 {
-    auto node = TreeNode{Type::List, pos};
+    if (nodeList_ && !nodeList_->empty())
+        return nodeList_->at(0)->asItem().addNodeList(name, pos);
+
+    auto node = TreeNode{Type::List, name, pos};
     auto [it, ok] = nodes_.emplace(name, std::move(node));
     if (!ok)
         throw ConfigError{"Node list '" + name + "' already exists", pos};
@@ -311,7 +345,10 @@ inline TreeNode& TreeNode::Item::addNodeList(const std::string& name, const Stre
 
 inline TreeNode& TreeNode::Item::addAny(const std::string& name, const StreamPosition& pos)
 {
-    auto node = TreeNode{Type::Any, pos};
+    if (nodeList_ && !nodeList_->empty())
+        return nodeList_->at(0)->asItem().addAny(name, pos);
+
+    auto node = TreeNode{Type::Any, name, pos};
     auto [it, ok] = nodes_.emplace(name, std::move(node));
     if (!ok)
         throw ConfigError{"Node '" + name + "' already exists", pos};
@@ -321,6 +358,9 @@ inline TreeNode& TreeNode::Item::addAny(const std::string& name, const StreamPos
 
 inline void TreeNode::Item::addParam(const std::string& name, const std::string& value, const StreamPosition& pos)
 {
+    if (nodeList_ && !nodeList_->empty())
+        return nodeList_->at(0)->asItem().addParam(name, value, pos);
+
     auto [_, ok] = params_.emplace(name, TreeParam{value, pos});
     if (!ok)
         throw ConfigError{"Parameter '" + name + "' already exists", pos};
@@ -331,31 +371,34 @@ inline void TreeNode::Item::addParamList(
         const std::vector<std::string>& valueList,
         const StreamPosition& pos)
 {
+    if (nodeList_ && !nodeList_->empty())
+        return nodeList_->at(0)->asItem().addParamList(name, valueList, pos);
+
     auto [_, ok] = params_.emplace(name, TreeParam{valueList, pos});
     if (!ok)
         throw ConfigError{"Parameter list '" + name + "' already exists", pos};
 }
 
-inline TreeNode makeTreeRoot()
+inline std::unique_ptr<TreeNode> makeTreeRoot()
 {
-    return TreeNode{TreeNode::Type::Root, {1, 1}};
+    return std::unique_ptr<TreeNode>{new TreeNode(TreeNode::Type::Root, "root", {1, 1})};
 }
 
-class Tree{
+class Tree {
 public:
-    Tree(TreeNode&& root)
+    Tree(std::unique_ptr<TreeNode> root)
         : root_(std::move(root))
-    {}
+    {
+    }
 
     const TreeNode& root() const
     {
-        return root_;
+        return *root_;
     }
 
 private:
-    TreeNode root_;
+    std::unique_ptr<TreeNode> root_;
 };
-
 
 } //namespace figcone
 
