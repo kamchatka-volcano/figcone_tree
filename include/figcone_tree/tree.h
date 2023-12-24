@@ -76,7 +76,7 @@ class TreeNode {
         Any
     };
 
-    explicit TreeNode(Type type, const std::string& name, const StreamPosition& position = {})
+    explicit TreeNode(Type type, const std::string& name = {}, const StreamPosition& position = {})
         : data_{List()}
         , type_{type}
         , name_{name}
@@ -98,9 +98,10 @@ public:
     class Item;
     class List {
     public:
-        int count() const;
-        const TreeNode& node(int index) const;
-        TreeNode& addNode(const std::string& name, const StreamPosition& pos = {});
+        int size() const;
+        const TreeNode& at(int index) const;
+        TreeNode& emplaceBack(const std::string& name, const StreamPosition& pos = {});
+        TreeNode& emplaceBack(const StreamPosition& pos = {});
 
     private:
         std::vector<std::unique_ptr<TreeNode>> nodeList_;
@@ -158,13 +159,13 @@ public:
     const Item& asItem() const
     {
         if (isAny()) {
-            if (asList().count() > 1)
+            if (asList().size() > 1)
                 throw ConfigError{"Bad any node access - trying to get multiple items as a single item", position_};
             //            if (asList().count() == 0){
             //                static const auto item = Item{};
             //                return item;
             //            }
-            return listAdatapterItem_;
+            return listAdapterItem_;
         }
 
         if (!isItem())
@@ -187,17 +188,17 @@ public:
             if (prevAccess != Type::Item) {
                 prevAccess = Type::Item;
                 auto& list = data_.emplace<List>();
-                listAdatapterItem_ = Item{&list.nodeList_};
-                list.addNode(name_);
-                //return list.addNode(name_).asItem();
-                return listAdatapterItem_;
+                listAdapterItem_ = Item{&list.nodeList_};
+                list.emplaceBack(name_);
+                return listAdapterItem_;
             }
-            if (std::get<List>(data_).count() != 1)
-                throw ConfigError{"Bad any node access - trying to get zero or multiple items as a single item"};
+            if (std::get<List>(data_).size() != 1)
+                throw ConfigError{
+                        "Bad any node access - trying to get zero or multiple items as a single item",
+                        position_};
 
             prevAccess = Type::Item;
-            //return std::get<List>(data_).nodeList_.at(0)->asItem();
-            return listAdatapterItem_;
+            return listAdapterItem_;
         }
 
         if (!isItem())
@@ -210,7 +211,7 @@ public:
         if (isAny() && prevAccess != Type::List) {
             prevAccess = Type::List;
             auto& list = data_.emplace<List>();
-            listAdatapterItem_ = Item{&list.nodeList_};
+            listAdapterItem_ = Item{&list.nodeList_};
             return list;
         }
 
@@ -241,26 +242,33 @@ private:
     Type prevAccess = Type::Any;
     std::string name_;
     StreamPosition position_ = {1, 1};
-    Item listAdatapterItem_;
+    Item listAdapterItem_;
 
     friend std::unique_ptr<TreeNode> makeTreeRoot();
 };
 
-inline int TreeNode::List::count() const
+inline int TreeNode::List::size() const
 {
     return static_cast<int>(nodeList_.size());
 }
 
-inline const TreeNode& TreeNode::List::node(int index) const
+inline const TreeNode& TreeNode::List::at(int index) const
 {
     return *nodeList_.at(static_cast<std::size_t>(index));
 }
 
-inline TreeNode& TreeNode::List::addNode(const std::string& name, const StreamPosition& pos)
+inline TreeNode& TreeNode::List::emplaceBack(const std::string& name, const StreamPosition& pos)
 {
     auto node = std::unique_ptr<TreeNode>{new TreeNode(TreeNode::Type::Item, name, pos)};
     return *nodeList_.emplace_back(std::move(node));
 }
+
+inline TreeNode& TreeNode::List::emplaceBack(const StreamPosition& pos)
+{
+    auto node = std::unique_ptr<TreeNode>{new TreeNode(TreeNode::Type::Item, {}, pos)};
+    return *nodeList_.emplace_back(std::move(node));
+}
+
 
 inline int TreeNode::Item::paramsCount() const
 {
