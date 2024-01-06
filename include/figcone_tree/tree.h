@@ -3,13 +3,28 @@
 
 #include "errors.h"
 #include "streamposition.h"
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
 namespace figcone {
+
+namespace detail{
+
+template<typename T>
+std::vector<std::string> keys(const std::map<std::string, T>& map)
+{
+    auto result = std::vector<std::string>{};
+    result.reserve(map.size());
+    std::transform(map.begin(), map.end(), std::back_inserter(result), [](const auto& pair){return pair.first;});
+    return result;
+}
+
+}
 
 class TreeParam {
     struct Item {
@@ -75,10 +90,10 @@ class TreeNode {
         Any
     };
 
-    explicit TreeNode(Type type, const std::string& name = {}, const StreamPosition& position = {})
+    explicit TreeNode(Type type, std::string name = {}, const StreamPosition& position = {})
         : data_{List()}
         , type_{type}
-        , name_{name}
+        , name_{std::move(name)}
         , position_{position}
     {
         switch (type_) {
@@ -105,15 +120,27 @@ public:
             return *nodeList_.at(static_cast<std::size_t>(index));
         }
 
-        TreeNode& emplaceBack(const std::string& name, const StreamPosition& pos = {})
+        TreeNode& emplaceBack(std::string_view name, const StreamPosition& pos = {})
         {
-            auto node = std::unique_ptr<TreeNode>{new TreeNode(TreeNode::Type::Item, name, pos)};
+            auto node = std::unique_ptr<TreeNode>{new TreeNode(TreeNode::Type::Item, std::string{name}, pos)};
             return *nodeList_.emplace_back(std::move(node));
         }
 
         TreeNode& emplaceBack(const StreamPosition& pos = {})
         {
             auto node = std::unique_ptr<TreeNode>{new TreeNode(TreeNode::Type::Item, {}, pos)};
+            return *nodeList_.emplace_back(std::move(node));
+        }
+
+        TreeNode& emplaceBackAny(std::string_view name, const StreamPosition& pos = {})
+        {
+            auto node = std::unique_ptr<TreeNode>{new TreeNode(TreeNode::Type::Any, std::string{name}, pos)};
+            return *nodeList_.emplace_back(std::move(node));
+        }
+
+        TreeNode& emplaceBackAny(const StreamPosition& pos = {})
+        {
+            auto node = std::unique_ptr<TreeNode>{new TreeNode(TreeNode::Type::Any, {}, pos)};
             return *nodeList_.emplace_back(std::move(node));
         }
 
@@ -129,65 +156,85 @@ public:
         {
         }
 
-        int paramsCount() const
+        int paramsCount(bool checkIfInvokedThroughAdapterItem = true) const
         {
-            if (nodeList_ && !nodeList_->empty())
-                return nodeList_->at(0)->asItem().paramsCount();
+            if (checkIfInvokedThroughAdapterItem && nodeList_ && !nodeList_->empty())
+                return nodeList_->at(0)->asItem().paramsCount(false);
 
             return static_cast<int>(params_.size());
         }
 
-        int nodesCount() const
+        int nodesCount(bool checkIfInvokedThroughAdapterItem = true) const
         {
-            if (nodeList_ && !nodeList_->empty())
-                return nodeList_->at(0)->asItem().nodesCount();
+            if (checkIfInvokedThroughAdapterItem && nodeList_ && !nodeList_->empty())
+                return nodeList_->at(0)->asItem().nodesCount(false);
 
             return static_cast<int>(nodes_.size());
         }
 
-        bool hasParam(const std::string& name) const
+        bool hasParam(const std::string& name, bool checkIfInvokedThroughAdapterItem = true) const
         {
-            if (nodeList_ && !nodeList_->empty())
-                return nodeList_->at(0)->asItem().hasParam(name);
+            if (checkIfInvokedThroughAdapterItem && nodeList_ && !nodeList_->empty())
+                return nodeList_->at(0)->asItem().hasParam(name, false);
 
             return params_.find(name) != params_.end();
         }
 
-        bool hasNode(const std::string& name) const
+        bool hasNode(const std::string& name, bool checkIfInvokedThroughAdapterItem = true) const
         {
-            if (nodeList_ && !nodeList_->empty()) {
+            if (checkIfInvokedThroughAdapterItem && nodeList_ && !nodeList_->empty()) {
                 if (nodeList_->at(0)->name_ == name)
                     return true;
-                return nodeList_->at(0)->asItem().hasNode(name);
+                return nodeList_->at(0)->asItem().hasNode(name, false);
             }
 
             return nodes_.find(name) != nodes_.end();
         }
 
-        const TreeParam& param(const std::string& name) const
+        const TreeParam& param(const std::string& name, bool checkIfInvokedThroughAdapterItem = true) const
         {
-            if (nodeList_ && !nodeList_->empty())
-                return nodeList_->at(0)->asItem().param(name);
+            if (checkIfInvokedThroughAdapterItem && nodeList_ && !nodeList_->empty())
+                return nodeList_->at(0)->asItem().param(name, false);
 
             return params_.at(name);
         }
 
-        const TreeNode& node(const std::string& name) const
+        std::vector<std::string> paramNames() const
         {
-            if (nodeList_ && !nodeList_->empty()) {
+            if (nodeList_ && !nodeList_->empty())
+                return detail::keys(nodeList_->at(0)->asItem().params_);
+
+            return detail::keys(params_);
+        }
+
+        const TreeNode& node(const std::string& name, bool checkIfInvokedThroughAdapterItem = true) const
+        {
+            if (checkIfInvokedThroughAdapterItem && nodeList_ && !nodeList_->empty()) {
                 if (nodeList_->at(0)->name_ == name)
                     return *nodeList_->at(0);
 
-                return nodeList_->at(0)->asItem().node(name);
+                return nodeList_->at(0)->asItem().node(name, false);
             }
 
             return nodes_.at(name);
         }
 
-        TreeNode& addNode(const std::string& name, const StreamPosition& pos = {})
+        std::vector<std::string> nodeNames() const
         {
-            if (nodeList_ && !nodeList_->empty())
-                return nodeList_->at(0)->asItem().addNode(name, pos);
+            if (nodeList_ && !nodeList_->empty()) {
+                if (nodeList_->size() == 1)
+                    return {nodeList_->at(0)->name_};
+
+                return detail::keys(nodeList_->at(0)->asItem().nodes_);
+            }
+
+            return detail::keys(nodes_);
+        }
+
+        TreeNode& addNode(const std::string& name, const StreamPosition& pos = {}, bool checkIfInvokedThroughAdapterItem = true)
+        {
+            if (checkIfInvokedThroughAdapterItem && nodeList_ && !nodeList_->empty())
+                return nodeList_->at(0)->asItem().addNode(name, pos, false);
 
             auto node = TreeNode{Type::Item, name, pos};
             auto [it, ok] = nodes_.emplace(name, std::move(node));
@@ -197,10 +244,10 @@ public:
             return it->second;
         }
 
-        TreeNode& addNodeList(const std::string& name, const StreamPosition& pos = {})
+        TreeNode& addNodeList(const std::string& name, const StreamPosition& pos = {}, bool checkIfInvokedThroughAdapterItem = true)
         {
-            if (nodeList_ && !nodeList_->empty())
-                return nodeList_->at(0)->asItem().addNodeList(name, pos);
+            if (checkIfInvokedThroughAdapterItem && nodeList_ && !nodeList_->empty())
+                return nodeList_->at(0)->asItem().addNodeList(name, pos, false);
 
             auto node = TreeNode{Type::List, name, pos};
             auto [it, ok] = nodes_.emplace(name, std::move(node));
@@ -210,10 +257,10 @@ public:
             return it->second;
         }
 
-        TreeNode& addAny(const std::string& name, const StreamPosition& pos = {})
+        TreeNode& addAny(const std::string& name, const StreamPosition& pos = {}, bool checkIfInvokedThroughAdapterItem = true)
         {
-            if (nodeList_ && !nodeList_->empty())
-                return nodeList_->at(0)->asItem().addAny(name, pos);
+            if (checkIfInvokedThroughAdapterItem && nodeList_ && !nodeList_->empty())
+                return nodeList_->at(0)->asItem().addAny(name, pos, false);
 
             auto node = TreeNode{Type::Any, name, pos};
             auto [it, ok] = nodes_.emplace(name, std::move(node));
@@ -223,10 +270,11 @@ public:
             return it->second;
         }
 
-        void addParam(const std::string& name, const std::string& value, const StreamPosition& pos = {})
+        void addParam(const std::string& name, const std::string& value, const StreamPosition& pos = {}, bool checkIfInvokedThroughAdapterItem = true)
         {
-            if (nodeList_ && !nodeList_->empty())
-                return nodeList_->at(0)->asItem().addParam(name, value, pos);
+            if (checkIfInvokedThroughAdapterItem && nodeList_ && !nodeList_->empty()) {
+                return nodeList_->at(0)->asItem().addParam(name, value, pos, false);
+            }
 
             auto [_, ok] = params_.emplace(name, TreeParam{value, pos});
             if (!ok)
@@ -236,10 +284,10 @@ public:
         void addParamList(
                 const std::string& name,
                 const std::vector<std::string>& valueList,
-                const StreamPosition& pos = {})
+                const StreamPosition& pos = {}, bool checkIfInvokedThroughAdapterItem = true)
         {
-            if (nodeList_ && !nodeList_->empty())
-                return nodeList_->at(0)->asItem().addParamList(name, valueList, pos);
+            if (checkIfInvokedThroughAdapterItem && nodeList_ && !nodeList_->empty())
+                return nodeList_->at(0)->asItem().addParamList(name, valueList, pos, checkIfInvokedThroughAdapterItem);
 
             auto [_, ok] = params_.emplace(name, TreeParam{valueList, pos});
             if (!ok)
