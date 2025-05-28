@@ -1,0 +1,29 @@
+name: release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+jobs:
+  build:
+    name: Publish release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install ninja (Linux)
+        run: sudo apt install ninja-build
+      - uses: actions/checkout@v4
+      - uses: rui314/setup-mold@v1
+      - uses: hendrikmuhs/ccache-action@v1.2
+      - name: Configure CMake to download dependencies
+        run: cmake -B build --preset="clang-release"
+      - name: Create release package
+        run: release_pack/release.sh
+      - name: Archive release artifacts
+        run: |
+          mv release figcone_tree-${{ github.ref_name }}
+          zip -r figcone_tree-${{ github.ref_name }}.zip figcone_tree-${{ github.ref_name }}
+      - name: Upload release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |            
+            figcone_tree-${{ github.ref_name }}.zip

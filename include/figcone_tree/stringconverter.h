@@ -2,7 +2,6 @@
 #define FIGCONE_TREE_STRINGCONVERTER_H
 
 #include "errors.h"
-#include "detail/external/sfun/type_traits.h"
 #include <optional>
 #include <sstream>
 #include <string>

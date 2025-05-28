@@ -4,7 +4,7 @@
 ## Installation
 Download and link the library from your project's CMakeLists.txt:
 ```
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.18)
 
 include(FetchContent)
 FetchContent_Declare(figcone_tree
@@ -18,6 +18,7 @@ FetchContent_MakeAvailable(figcone_tree)
 add_executable(${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME} PRIVATE figcone::figcone_tree)
 ```
+Prefer using the release ZIP archive with FetchContent, as it is fully self-contained and avoids spending additional time downloading the library dependencies during the CMake configuration step.
 
 For the system-wide installation use these commands:
 ```

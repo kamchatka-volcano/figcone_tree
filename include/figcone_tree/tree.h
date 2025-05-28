@@ -3,10 +3,11 @@
 
 #include "errors.h"
 #include "streamposition.h"
-#include "detail/external/sfun/optional_ref.h"
+#include "detail/external/eel/functional.h"
 #include <algorithm>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -159,7 +160,7 @@ public:
 
     class Item {
     public:
-        Item(tree::sfun::optional_ref<std::vector<std::unique_ptr<TreeNode>>> nodeList = std::nullopt)
+        Item(std::optional<tree::eel::ref<std::vector<std::unique_ptr<TreeNode>>>> nodeList = std::nullopt)
             : nodeList_{nodeList}
         {
         }
@@ -191,7 +192,7 @@ public:
         bool hasNode(const std::string& name, bool checkIfInvokedThroughAdapterItem = true) const
         {
             if (checkIfInvokedThroughAdapterItem && isAnyListItemAdapter()) {
-                if (nodeList_->at(0)->name_ == name)
+                if (nodeList_.value().get().at(0)->name_ == name)
                     return true;
                 return asAnyListItemAdapter()->hasNode(name, false);
             }
@@ -219,8 +220,8 @@ public:
         const TreeNode& node(const std::string& name, bool checkIfInvokedThroughAdapterItem = true) const
         {
             if (checkIfInvokedThroughAdapterItem && isAnyListItemAdapter()) {
-                if (nodeList_.get().value().at(0)->name_ == name)
-                    return *nodeList_.get().value().at(0);
+                if (nodeList_.value().get().at(0)->name_ == name)
+                    return *nodeList_.value().get().at(0);
 
                 return asAnyListItemAdapter()->node(name, false);
             }
@@ -316,27 +317,27 @@ public:
     private:
         bool isAnyListItemAdapter() const
         {
-            return nodeList_.get().has_value() && !nodeList_.get().value().empty();
+            return nodeList_.has_value() && !nodeList_.value().get().empty();
         }
 
         const Item* asAnyListItemAdapter() const
         {
-            if (nodeList_.get().has_value() && !nodeList_.get().value().empty())
-                return &std::as_const(*nodeList_.get().value().at(0)).asItem();
+            if (nodeList_.has_value() && !nodeList_.value().get().empty())
+                return &std::as_const(*nodeList_.value().get().at(0)).asItem();
             return nullptr;
         }
 
         Item* asAnyListItemAdapter()
         {
-            if (nodeList_.get().has_value() && !nodeList_.get().value().empty())
-                return &nodeList_.get().value().at(0)->asItem();
+            if (nodeList_.has_value() && !nodeList_.value().get().empty())
+                return &nodeList_.value().get().at(0)->asItem();
             return nullptr;
         }
 
     private:
         std::map<std::string, TreeParam> params_;
         std::map<std::string, TreeNode> nodes_;
-        tree::sfun::member<tree::sfun::optional_ref<std::vector<std::unique_ptr<TreeNode>>>> nodeList_;
+        std::optional<tree::eel::ref<std::vector<std::unique_ptr<TreeNode>>>> nodeList_;
     };
 
 public:
@@ -407,7 +408,7 @@ public:
         if (type_ == Type::Any && prevAccess != Type::List) {
             prevAccess = Type::List;
             auto& list = data_.emplace<List>();
-            listAdapterItem_ = Item{&list.nodeList_};
+            listAdapterItem_ = Item{list.nodeList_};
             return list;
         }
 
